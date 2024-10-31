@@ -5,7 +5,6 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  { parse } = require('graphql'),
   path = require('path'),
   fs = require('fs');
 
@@ -40,7 +39,6 @@ import { AudiencesRouter } from './Routers/AudiencesRouter';
 import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
-import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
@@ -388,6 +386,7 @@ class ParseServer {
     if (options.mountGraphQL === true || options.mountPlayground === true) {
       let graphQLCustomTypeDefs = undefined;
       if (typeof options.graphQLSchema === 'string') {
+        const { parse } = require('graphql');
         graphQLCustomTypeDefs = parse(fs.readFileSync(options.graphQLSchema, 'utf8'));
       } else if (
         typeof options.graphQLSchema === 'object' ||
@@ -396,6 +395,7 @@ class ParseServer {
         graphQLCustomTypeDefs = options.graphQLSchema;
       }
 
+      const { ParseGraphQLServer } = require('./GraphQL/ParseGraphQLServer');
       const parseGraphQLServer = new ParseGraphQLServer(this, {
         graphQLPath: options.graphQLPath,
         playgroundPath: options.playgroundPath,
