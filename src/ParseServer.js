@@ -25,7 +25,6 @@ import { HooksRouter } from './Routers/HooksRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { LogsRouter } from './Routers/LogsRouter';
-import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PagesRouter } from './Routers/PagesRouter';
 import { PublicAPIRouter } from './Routers/PublicAPIRouter';
 import { PushRouter } from './Routers/PushRouter';
@@ -463,6 +462,7 @@ class ParseServer {
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
+    const { ParseLiveQueryServer } = require('./LiveQuery/ParseLiveQueryServer');
     const server = new ParseLiveQueryServer(httpServer, config, options);
     await server.connect();
     return server;

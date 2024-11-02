@@ -10,8 +10,6 @@ import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageA
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import { pathToRegexp } from 'path-to-regexp';
-import RedisStore from 'rate-limit-redis';
-import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
 
 export const DEFAULT_ALLOWED_HEADERS =
@@ -533,6 +531,7 @@ export const addRateLimit = (route, config, cloud) => {
     store: null,
   };
   if (route.redisUrl) {
+    const { createClient } = require('redis');
     const client = createClient({
       url: route.redisUrl,
     });
@@ -548,6 +547,7 @@ export const addRateLimit = (route, config, cloud) => {
       }
     };
     redisStore.connectionPromise();
+    const RedisStore = require('rate-limit-redis');
     redisStore.store = new RedisStore({
       sendCommand: async (...args) => {
         await redisStore.connectionPromise();
