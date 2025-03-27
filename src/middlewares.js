@@ -5,13 +5,9 @@ import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 import rest from './rest';
-import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import { pathToRegexp } from 'path-to-regexp';
-import RedisStore from 'rate-limit-redis';
-import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
 
 export const DEFAULT_ALLOWED_HEADERS =
@@ -533,6 +529,7 @@ export const addRateLimit = (route, config, cloud) => {
     store: null,
   };
   if (route.redisUrl) {
+    const { createClient } = require('redis');
     const client = createClient({
       url: route.redisUrl,
     });
@@ -548,6 +545,7 @@ export const addRateLimit = (route, config, cloud) => {
       }
     };
     redisStore.connectionPromise();
+    const RedisStore = require('rate-limit-redis');
     redisStore.store = new RedisStore({
       sendCommand: async (...args) => {
         await redisStore.connectionPromise();
@@ -624,13 +622,9 @@ export const addRateLimit = (route, config, cloud) => {
  * @returns Promise<{}>
  */
 export function promiseEnsureIdempotency(req) {
-  // Enable feature only for MongoDB
-  if (
-    !(
-      req.config.database.adapter instanceof MongoStorageAdapter ||
-      req.config.database.adapter instanceof PostgresStorageAdapter
-    )
-  ) {
+  // Enable feature only for MongoDB and Postgres (is there any other ?)
+  const adapterName = req.config.database.adapter.getName();
+  if (!(adapterName === 'Mongo' || adapterName === 'Postgres')) {
     return Promise.resolve();
   }
   // Get parameters

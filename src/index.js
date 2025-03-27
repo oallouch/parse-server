@@ -2,7 +2,7 @@ import ParseServer from './ParseServer';
 import FileSystemAdapter from '@parse/fs-files-adapter';
 import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter';
 import NullCacheAdapter from './Adapters/Cache/NullCacheAdapter';
-import RedisCacheAdapter from './Adapters/Cache/RedisCacheAdapter';
+import RedisCacheAdapter from './Adapters/Cache/LazyRedisCacheAdapter';
 import LRUCacheAdapter from './Adapters/Cache/LRUCache.js';
 import * as TestUtils from './TestUtils';
 import * as SchemaMigrations from './SchemaMigrations/Migrations';
@@ -11,7 +11,7 @@ import { useExternal } from './deprecated';
 import { getLogger } from './logger';
 import { PushWorker } from './Push/PushWorker';
 import { ParseServerOptions } from './Options';
-import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
+import { ParseGraphQLServer } from './GraphQL/LazyParseGraphQLServer';
 
 // Factory function
 const _ParseServer = function (options: ParseServerOptions) {

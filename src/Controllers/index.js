@@ -8,7 +8,6 @@ import { FilesController } from './FilesController';
 import { HooksController } from './HooksController';
 import { UserController } from './UserController';
 import { CacheController } from './CacheController';
-import { LiveQueryController } from './LiveQueryController';
 import { AnalyticsController } from './AnalyticsController';
 import { PushController } from './PushController';
 import { PushQueue } from '../Push/PushQueue';
@@ -20,8 +19,6 @@ import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
 import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';
 import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
-import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParseGraphQLController from './ParseGraphQLController';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 
@@ -119,7 +116,7 @@ export function getCacheController(options: ParseServerOptions): CacheController
 export function getParseGraphQLController(
   options: ParseServerOptions,
   controllerDeps
-): ParseGraphQLController {
+): any | null {
   return new ParseGraphQLController({
     mountGraphQL: options.mountGraphQL,
     ...controllerDeps,
@@ -132,8 +129,13 @@ export function getAnalyticsController(options: ParseServerOptions): AnalyticsCo
   return new AnalyticsController(analyticsControllerAdapter);
 }
 
-export function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
-  return new LiveQueryController(options.liveQuery);
+export function getLiveQueryController(options: ParseServerOptions): any | null {
+  if (options?.liveQuery?.classNames) {
+    const { LiveQueryController } = require('./LiveQueryController');
+    return new LiveQueryController(options.liveQuery);
+  } else {
+    return null;
+  }
 }
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
@@ -171,6 +173,12 @@ interface PushControlling {
 
 export async function getPushController(options: ParseServerOptions): PushControlling {
   const { scheduledPush, push } = options;
+
+  // prevents the server from compiling @parse/push-adapter
+  // big benefit for serverless environments (fast startup)
+  if (!push) {
+    return null;
+  }
 
   const pushOptions = Object.assign({}, push);
   const pushQueueOptions = pushOptions.queueOptions || {};
@@ -220,19 +228,21 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
   } catch (e) {
     /* */
   }
-  switch (protocol) {
-    case 'postgres:':
-    case 'postgresql:':
-      return new PostgresStorageAdapter({
-        uri: databaseURI,
-        collectionPrefix,
-        databaseOptions,
-      });
-    default:
-      return new MongoStorageAdapter({
-        uri: databaseURI,
-        collectionPrefix,
-        mongoOptions: databaseOptions,
-      });
+  if (protocol === 'postgres:' || protocol === 'postgresql:') {
+    // lazy compiling for a faster startup time
+    const PostgresStorageAdapter = require('../Adapters/Storage/Postgres/PostgresStorageAdapter').default;
+    return new PostgresStorageAdapter({
+      uri: databaseURI,
+      collectionPrefix,
+      databaseOptions,
+    });
+  } else {
+    const MongoStorageAdapter = require('../Adapters/Storage/Mongo/MongoStorageAdapter').default;
+    console.log('Using MongoStorageAdapter: ', MongoStorageAdapter);
+    return new MongoStorageAdapter({
+      uri: databaseURI,
+      collectionPrefix,
+      mongoOptions: databaseOptions,
+    });
   }
 }

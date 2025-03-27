@@ -34,6 +34,11 @@ export interface StorageAdapter {
   schemaCacheTtl: ?number;
   enableSchemaHooks: boolean;
 
+  /**
+   * Prevents the code from using instanceof to check the type of the adapter.
+   * That way, the adapter not used isn't compiled at startup.
+   */
+  getName(): string;
   classExists(className: string): Promise<boolean>;
   setClassLevelPermissions(className: string, clps: any): Promise<void>;
   createClass(className: string, schema: SchemaType): Promise<void>;

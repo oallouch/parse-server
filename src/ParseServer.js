@@ -5,7 +5,6 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  { parse } = require('graphql'),
   path = require('path'),
   fs = require('fs');
 
@@ -26,7 +25,6 @@ import { HooksRouter } from './Routers/HooksRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { LogsRouter } from './Routers/LogsRouter';
-import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PagesRouter } from './Routers/PagesRouter';
 import { PublicAPIRouter } from './Routers/PublicAPIRouter';
 import { PushRouter } from './Routers/PushRouter';
@@ -40,7 +38,6 @@ import { AudiencesRouter } from './Routers/AudiencesRouter';
 import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
-import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
@@ -172,7 +169,9 @@ class ParseServer {
       ) {
         startupPromises.push(cacheController.adapter.connect());
       }
-      startupPromises.push(liveQueryController.connect());
+      if (liveQueryController) {
+        startupPromises.push(liveQueryController.connect());
+      }
       await Promise.all(startupPromises);
       if (cloud) {
         addParseCloud();
@@ -197,7 +196,10 @@ class ParseServer {
         new CheckRunner(security).run();
       }
       this.config.state = 'ok';
-      this.config = { ...this.config, ...pushController };
+      if (pushController) {
+        // pushController is optional
+        this.config = { ...this.config, ...pushController };
+      }
       Config.put(this.config);
       return this;
     } catch (error) {
@@ -388,6 +390,7 @@ class ParseServer {
     if (options.mountGraphQL === true || options.mountPlayground === true) {
       let graphQLCustomTypeDefs = undefined;
       if (typeof options.graphQLSchema === 'string') {
+        const { parse } = require('graphql');
         graphQLCustomTypeDefs = parse(fs.readFileSync(options.graphQLSchema, 'utf8'));
       } else if (
         typeof options.graphQLSchema === 'object' ||
@@ -396,6 +399,7 @@ class ParseServer {
         graphQLCustomTypeDefs = options.graphQLSchema;
       }
 
+      const { ParseGraphQLServer } = require('./GraphQL/ParseGraphQLServer');
       const parseGraphQLServer = new ParseGraphQLServer(this, {
         graphQLPath: options.graphQLPath,
         playgroundPath: options.playgroundPath,
@@ -463,6 +467,7 @@ class ParseServer {
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
+    const { ParseLiveQueryServer } = require('./LiveQuery/ParseLiveQueryServer');
     const server = new ParseLiveQueryServer(httpServer, config, options);
     await server.connect();
     return server;

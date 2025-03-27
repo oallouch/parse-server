@@ -14,8 +14,6 @@ import logger from '../logger';
 import Utils from '../Utils';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
-import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
@@ -1776,8 +1774,9 @@ class DatabaseController {
         throw error;
       });
 
-    const isMongoAdapter = this.adapter instanceof MongoStorageAdapter;
-    const isPostgresAdapter = this.adapter instanceof PostgresStorageAdapter;
+    const adapterName = this.adapter.getName();
+    const isMongoAdapter = adapterName === 'Mongo';
+    const isPostgresAdapter = adapterName === 'Postgres';
     if (isMongoAdapter || isPostgresAdapter) {
       let options = {};
       if (isMongoAdapter) {

@@ -158,6 +158,10 @@ export class MongoStorageAdapter implements StorageAdapter {
     }
   }
 
+  getName() {
+    return 'Mongo';
+  }
+
   watch(callback: () => void): void {
     this._onchange = callback;
   }

@@ -875,6 +875,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = false;
   }
 
+  getName() {
+    return 'Postgres';
+  }
+
   watch(callback: () => void): void {
     this._onchange = callback;
   }

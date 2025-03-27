@@ -1,32 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
-
-const apple = require('./apple');
-const gcenter = require('./gcenter');
-const gpgames = require('./gpgames');
-const facebook = require('./facebook');
-const instagram = require('./instagram');
-const linkedin = require('./linkedin');
-const meetup = require('./meetup');
 import mfa from './mfa';
-const google = require('./google');
-const github = require('./github');
-const twitter = require('./twitter');
-const spotify = require('./spotify');
-const digits = require('./twitter'); // digits tokens are validated by twitter
-const janrainengage = require('./janrainengage');
-const janraincapture = require('./janraincapture');
-const line = require('./line');
-const vkontakte = require('./vkontakte');
-const qq = require('./qq');
-const wechat = require('./wechat');
-const weibo = require('./weibo');
-const oauth2 = require('./oauth2');
-const phantauth = require('./phantauth');
-const microsoft = require('./microsoft');
-const keycloak = require('./keycloak');
-const ldap = require('./ldap');
 
 const anonymous = {
   validateAuthData: () => {
@@ -37,33 +12,31 @@ const anonymous = {
   },
 };
 
-const providers = {
-  apple,
-  gcenter,
-  gpgames,
-  facebook,
-  instagram,
-  linkedin,
-  meetup,
-  mfa,
-  google,
-  github,
-  twitter,
-  spotify,
-  anonymous,
-  digits,
-  janrainengage,
-  janraincapture,
-  line,
-  vkontakte,
-  qq,
-  wechat,
-  weibo,
-  phantauth,
-  microsoft,
-  keycloak,
-  ldap,
-};
+
+const providers = new Set([
+  "apple", "gcenter", "gpgames", "facebook", "instagram", "linkedin", "meetup", "google", "github", "twitter",
+  "spotify", "digits", "janrainengage", "janraincapture", "line", "vkontakte", "qq", "wechat", "weibo",
+  "phantauth", "microsoft", "keycloak", "ldap", "oauth2"
+]);
+
+const loadedProviders = new Map();
+
+const getProvider = function (providerName) {
+  if (providerName === 'anonymous') {
+    return anonymous;
+  }
+  if (providerName === 'mfa') {
+    return mfa;
+  }
+  if (!providers.has(providerName)) {
+    return undefined;
+  }
+  if (!loadedProviders.has(providerName)) {
+    const provider = require(`./${providerName}`);
+    loadedProviders.set(providerName, provider);
+  }
+  return loadedProviders.get(providerName);
+}
 
 // Indexed auth policies
 const authAdapterPolicies = {
@@ -141,18 +114,18 @@ function authDataValidator(provider, adapter, appIds, options) {
   };
 }
 
-function loadAuthAdapter(provider, authOptions) {
+function loadAuthAdapter(providerName, authOptions) {
   // providers are auth providers implemented by default
-  let defaultAdapter = providers[provider];
+  let defaultAdapter = getProvider(providerName);
   // authOptions can contain complete custom auth adapters or
   // a default auth adapter like Facebook
-  const providerOptions = authOptions[provider];
+  const providerOptions = authOptions[providerName];
   if (
     providerOptions &&
     Object.prototype.hasOwnProperty.call(providerOptions, 'oauth2') &&
     providerOptions['oauth2'] === true
   ) {
-    defaultAdapter = oauth2;
+    defaultAdapter = getProvider("oauth2");
   }
 
   // Default provider not found and a custom auth provider was not provided
